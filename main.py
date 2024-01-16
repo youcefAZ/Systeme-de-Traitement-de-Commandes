@@ -82,7 +82,12 @@ def create_order(order_request: OrderRequest):
     db.add(db_order)
     db.commit()
     db.refresh(db_order)
-    return db_order
+    return OrderResponse(
+        idcommande=db_order.idcommande,
+        product_id=db_order.product_id,
+        customer_name=db_order.customer_name,
+        quantity=db_order.quantity
+        )
 
 @app.get("/orders/{order_idcommande}", response_model=OrderResponse)
 def read_order(order_idcommande: int):
@@ -90,7 +95,12 @@ def read_order(order_idcommande: int):
     db_order = db.query(Order).filter(Order.idcommande == order_idcommande).first()
     if db_order is None:
         raise HTTPException(status_code=404, detail="Order not found")
-    return db_order
+    return OrderResponse(
+        idcommande=db_order.idcommande,
+        product_id=db_order.product_id,
+        customer_name=db_order.customer_name,
+        quantity=db_order.quantity
+        )
 
 @app.post("/devis/", response_model=DevisReponse)
 def create_devis(devis_request: DevisRequest):
@@ -99,7 +109,12 @@ def create_devis(devis_request: DevisRequest):
     db.add(db_devis)
     db.commit()
     db.refresh(db_devis)
-    return db_devis
+    return DevisReponse(
+        idDevis=db_devis.idDevis,
+        idcommande=db_devis.idcommande,
+        quantity=db_devis.quantity,
+        montant=db_devis.montant
+    )
 
 @app.get("/devis/{devis_idDevis}", response_model=DevisRequest)
 def read_order(devis_idDevis: int):
@@ -107,7 +122,12 @@ def read_order(devis_idDevis: int):
     db_devis = db.query(Devis).filter(Devis.idDevis == devis_idDevis).first()
     if db_devis is None:
         raise HTTPException(status_code=404, detail="Devis not found")
-    return db_devis
+    return DevisReponse(
+        idDevis=db_devis.idDevis,
+        idcommande=db_devis.idcommande,
+        quantity=db_devis.quantity,
+        montant=db_devis.montant
+    )
 
 
 @app.post("/check_order")
@@ -131,7 +151,12 @@ def create_order(product_request: ProductRequest):
     db.add(db_product)
     db.commit()
     db.refresh(db_product)
-    return db_product
+    return ProductResponse(
+        product_id=db_product.product_id,
+        product_name=db_product.product_name,
+        quantity_available=db_product.quantity_available,
+        unit_price=db_product.unit_price)
+        
 
 @app.get("/remplissage/{product_product_id}", response_model=ProductResponse)
 def read_order(product_product_id: int):
@@ -139,7 +164,11 @@ def read_order(product_product_id: int):
     db_product = db.query(Product).filter(Product.product_id == product_product_id).first()
     if db_product is None:
         raise HTTPException(status_code=404, detail="Product is not found")
-    return db_product
+    return ProductResponse(
+        product_id=db_product.product_id,
+        product_name=db_product.product_name,
+        quantity_available=db_product.quantity_available,
+        unit_price=db_product.unit_price)
 
 
 #uvicorn nom_du_fichier:app --reload
