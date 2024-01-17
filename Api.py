@@ -33,6 +33,7 @@ class Devis(Base):
 
     idDevis = Column(Integer, primary_key=True, index=True)
     idcommande = Column(String, index=True)
+    customer_name = Column(String, index=True)
     quantity = Column(Integer, index=True)
     montant = Column(Integer, index=True)
 
@@ -62,12 +63,14 @@ class OrderResponse(BaseModel):
 
 class DevisRequest(BaseModel):
     idcommande : int
+    customer_name: str
     quantity : int
     montant: int
 
 class DevisReponse(BaseModel):
     idDevis: int
     idcommande : int
+    customer_name: str
     quantity : int
     montant: int
 
@@ -134,6 +137,7 @@ def create_devis(devis_request: DevisRequest):
     return DevisReponse(
         idDevis=db_devis.idDevis,
         idcommande=db_devis.idcommande,
+        customer_name=db_devis.customer_name,
         quantity=db_devis.quantity,
         montant=db_devis.montant
     )
@@ -147,6 +151,7 @@ def read_order(devis_idDevis: int):
     return DevisReponse(
         idDevis=db_devis.idDevis,
         idcommande=db_devis.idcommande,
+        customer_name=db_devis.customer_name,
         quantity=db_devis.quantity,
         montant=db_devis.montant
     )
@@ -180,10 +185,11 @@ def create_order(product_request: ProductRequest):
         unit_price=db_product.unit_price)
         
 
-@app.get("/remplissage/{product_product_id}", response_model=ProductResponse)
-def read_order(product_product_id: int):
+@app.get("/remplissage/{product_id}", response_model=ProductResponse)
+def read_order(product_id: int):
     db = SessionLocal()
-    db_product = db.query(Product).filter(Product.product_id == product_product_id).first()
+    db_product = db.query(Product).filter(Product.product_id == product_id).first()
+    print(db_product)
     if db_product is None:
         raise HTTPException(status_code=404, detail="Product is not found")
     return ProductResponse(
