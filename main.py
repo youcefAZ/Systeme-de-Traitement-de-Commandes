@@ -36,6 +36,15 @@ class Devis(Base):
     quantity = Column(Integer, index=True)
     montant = Column(Integer, index=True)
 
+class Payement(Base):
+    __tablename__ = "payement"
+
+    payement_id=Column(Integer, primary_key=True, index=True)
+    commande_id = Column(Integer, index=True)
+    customer_name=Column(String,index=True)
+    quantity=Column(Integer, index=True)
+    montant= Column(Integer, index=True)
+
 # Création de la table
 Base.metadata.create_all(bind=engine)
 
@@ -72,6 +81,19 @@ class ProductResponse(BaseModel):
     product_name : str
     quantity_available : int
     unit_price : int
+
+class PayementRequest(BaseModel):
+    commande_id : int
+    customer_name : str
+    quantity : int
+    montant : int
+
+class PayementResponse(BaseModel):
+    payement_id : int
+    commande_id : int
+    customer_name : str
+    quantity : int
+    montant : int
 
 app = FastAPI()
 
@@ -170,5 +192,33 @@ def read_order(product_product_id: int):
         quantity_available=db_product.quantity_available,
         unit_price=db_product.unit_price)
 
+
+@app.post("/payement/", response_model=PayementResponse)
+def create_payement(payement_request:PayementRequest):
+    db = SessionLocal()
+    db_payement = Payement(**payement_request.dict())
+    db.add(db_payement)
+    db.commit()
+    db.refresh(db_payement)
+    return PayementResponse(
+        payement_id=db_payement.payement_id,
+        commande_id=db_payement.commande_id,
+        customer_name=db_payement.customer_name,
+        quantity=db_payement.quantity,
+        montant=db_payement.montant)
+    
+
+@app.post("/checkPayement/{payement_id}",response_model=PayementResponse)
+def check_payement(payement_id: int) :
+    db = SessionLocal()
+    db_payement = db.query(Payement).filter(Payement.payement_id == payement_id).first()
+    if db_payement is None:
+        raise HTTPException(status_code=404, detail="Payement not found")
+    return PayementResponse(
+        payement_id=db_payement.payement_id,
+        commande_id=db_payement.commande_id,
+        customer_name=db_payement.customer_name,
+        quantity=db_payement.quantity,
+        montant=db_payement.montant)
 
 #uvicorn nom_du_fichier:app --reload
