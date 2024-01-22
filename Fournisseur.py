@@ -1,7 +1,8 @@
 import Api
 from fastapi import FastAPI, BackgroundTasks
 import requests
-
+import pika
+import json
 
 app = FastAPI()
 
@@ -10,30 +11,20 @@ fournisseur_url="http://localhost:8002"
 client_url="http://localhost:8001"
 
 
-def check_order(order_data: Api.OrderResponse, background_tasks:BackgroundTasks):
-    product_id=order_data["product_id"]
-    quantity=order_data["quantity"]
-    order_endpoint = f"{base_url}/check_order?product_id={product_id}&quantity={quantity}"
-    
-    response = requests.post(order_endpoint)
-    response_json = response.json()
+def order_mq(order_data : Api.OrderResponse) :
 
-    if response_json["status"] == "Available":
-        # Order verified successfully
-        print("Order verified successfully")
-        print(response_json)
+    connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
+    channel = connection.channel()
 
-        order_endpoint = f"{client_url}/receive_validation"
-        print("Works ?")
-        response = requests.post(order_endpoint,json=response_json)
+    channel.queue_declare(queue='MQ1')
 
-        background_tasks.add_task(generate_devis,order_data)
+    message = json.dumps(order_data)
+    channel.basic_publish(exchange='', routing_key='MQ1', body=message)
 
-    else:
-        # Failed to verify order, print error details
-        print(f"Failed to verify order. Status: {response_json['status']}, Message: {response_json['message']}")
+    print(f" [x] Sent '{message}'")
+
+    connection.close()
         
-
 
 
 def generate_devis(order_data : Api.OrderResponse):
@@ -77,13 +68,36 @@ def place_order(order_data: Api.OrderRequest, background_tasks: BackgroundTasks)
         print(response.json())
 
         #call check_order from a backgroundtask
-        background_tasks.add_task(check_order,response.json(),background_tasks)
+        background_tasks.add_task(order_mq,response.json())
     else:
         # Failed to place order
         print(f"Failed to place order. Status Code: {response.status_code}")
         print(response.text)
     
     return {"status" : "finished"}
+
+
+
+@app.post("/check_order/")
+def check_order(order_data : dict, background_tasks:BackgroundTasks):
+    product_id=order_data["product_id"]
+    quantity=order_data["quantity"]
+    order_endpoint = f"{base_url}/check_order?product_id={product_id}&quantity={quantity}"
+    response = requests.post(order_endpoint)
+    response_json = response.json()
+    print(response_json)
+    if response_json["status"] == "Available":
+        # Order verified successfully
+        print("Order verified successfully")
+        print(response_json)
+
+        order_endpoint = f"{client_url}/receive_validation"
+        response = requests.post(order_endpoint,json=response_json)
+        background_tasks.add_task(generate_devis,order_data)
+
+    else:
+        # Failed to verify order, print error details
+        print(f"Failed to verify order. Status: {response_json['status']}, Message: {response_json['message']}")
 
 
 @app.post("/receive_payement/")
