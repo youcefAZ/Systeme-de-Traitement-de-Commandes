@@ -11,7 +11,7 @@ fournisseur_url="http://localhost:8002"
 client_url="http://localhost:8001"
 
 
-def order_mq(order_data : Api.OrderResponse) :
+def order_mq_order(order_data : Api.OrderResponse) :
 
     connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
     channel = connection.channel()
@@ -25,9 +25,24 @@ def order_mq(order_data : Api.OrderResponse) :
 
     connection.close()
         
+def order_mq_devis(order_data : Api.OrderResponse):
+    connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
+    channel = connection.channel()
+
+    channel.queue_declare(queue='MQ2')
+
+    message = json.dumps(order_data)
+    channel.basic_publish(exchange='', routing_key='MQ2', body=message)
+
+    print(f" [x] Sent '{message}'")
+
+    connection.close()
 
 
-def generate_devis(order_data : Api.OrderResponse):
+
+@app.post("/generate_devis/")
+def generate_devis(order_data : dict):
+
     product_id=order_data["product_id"]
     order_endpoint = f"{base_url}/remplissage/{product_id}"
     response = requests.get(order_endpoint)
@@ -68,7 +83,7 @@ def place_order(order_data: Api.OrderRequest, background_tasks: BackgroundTasks)
         print(response.json())
 
         #call check_order from a backgroundtask
-        background_tasks.add_task(order_mq,response.json())
+        background_tasks.add_task(order_mq_order,response.json())
     else:
         # Failed to place order
         print(f"Failed to place order. Status Code: {response.status_code}")
@@ -79,7 +94,7 @@ def place_order(order_data: Api.OrderRequest, background_tasks: BackgroundTasks)
 
 
 @app.post("/check_order/")
-def check_order(order_data : dict, background_tasks:BackgroundTasks):
+def check_order(order_data : dict, background_tasks: BackgroundTasks):
     product_id=order_data["product_id"]
     quantity=order_data["quantity"]
     order_endpoint = f"{base_url}/check_order?product_id={product_id}&quantity={quantity}"
@@ -93,7 +108,7 @@ def check_order(order_data : dict, background_tasks:BackgroundTasks):
 
         order_endpoint = f"{client_url}/receive_validation"
         response = requests.post(order_endpoint,json=response_json)
-        background_tasks.add_task(generate_devis,order_data)
+        background_tasks.add_task(order_mq_devis,order_data)
 
     else:
         # Failed to verify order, print error details

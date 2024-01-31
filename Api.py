@@ -19,6 +19,7 @@ class Order(Base):
     product_id = Column(String, index=True)
     quantity =  Column(Integer, index=True)
     customer_name = Column(String, index=True)
+    state = Column(String, default="Pending", index=True)
 
 class Product(Base):
     __tablename__ = "product"
@@ -36,6 +37,7 @@ class Devis(Base):
     customer_name = Column(String, index=True)
     quantity = Column(Integer, index=True)
     montant = Column(Integer, index=True)
+    state = Column(String, default="Pending", index=True)
 
 class Payement(Base):
     __tablename__ = "payement"
@@ -54,18 +56,21 @@ class OrderRequest(BaseModel):
     product_id: int
     customer_name: str
     quantity : int
+    state: str = "Pending"
 
 class OrderResponse(BaseModel):
     idcommande: int
     product_id: int
     customer_name: str
     quantity : int
+    state : str
 
 class DevisRequest(BaseModel):
     idcommande : int
     customer_name: str
     quantity : int
     montant: int
+    state: str = "Pending"
 
 class DevisReponse(BaseModel):
     idDevis: int
@@ -73,6 +78,7 @@ class DevisReponse(BaseModel):
     customer_name: str
     quantity : int
     montant: int
+    state : str
 
 class ProductRequest(BaseModel):
     product_name : str
@@ -111,7 +117,8 @@ def create_order(order_request: OrderRequest):
         idcommande=db_order.idcommande,
         product_id=db_order.product_id,
         customer_name=db_order.customer_name,
-        quantity=db_order.quantity
+        quantity=db_order.quantity,
+        state=db_order.state
         )
 
 @app.get("/orders/{order_idcommande}", response_model=OrderResponse)
@@ -124,7 +131,8 @@ def read_order(order_idcommande: int):
         idcommande=db_order.idcommande,
         product_id=db_order.product_id,
         customer_name=db_order.customer_name,
-        quantity=db_order.quantity
+        quantity=db_order.quantity,
+        state=db_order.state
         )
 
 @app.post("/devis/", response_model=DevisReponse)
@@ -139,7 +147,8 @@ def create_devis(devis_request: DevisRequest):
         idcommande=db_devis.idcommande,
         customer_name=db_devis.customer_name,
         quantity=db_devis.quantity,
-        montant=db_devis.montant
+        montant=db_devis.montant,
+        state=db_devis.state
     )
 
 @app.get("/devis/{devis_idDevis}", response_model=DevisRequest)
@@ -153,7 +162,8 @@ def read_order(devis_idDevis: int):
         idcommande=db_devis.idcommande,
         customer_name=db_devis.customer_name,
         quantity=db_devis.quantity,
-        montant=db_devis.montant
+        montant=db_devis.montant,
+        state=db_devis.state
     )
 
 
