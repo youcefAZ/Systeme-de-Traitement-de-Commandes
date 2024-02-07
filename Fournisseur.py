@@ -105,6 +105,10 @@ def check_order(order_data : dict, background_tasks: BackgroundTasks):
         # Order verified successfully
         print("Order verified successfully")
         print(response_json)
+        
+        order_endpoint = f"{base_url}/validate_order/{order_data['idcommande']}/{'validated'}"
+        response = requests.post(order_endpoint)
+        response_json=response.json()
 
         order_endpoint = f"{client_url}/receive_validation"
         response = requests.post(order_endpoint,json=response_json)
@@ -113,6 +117,9 @@ def check_order(order_data : dict, background_tasks: BackgroundTasks):
     else:
         # Failed to verify order, print error details
         print(f"Failed to verify order. Status: {response_json['status']}, Message: {response_json['message']}")
+
+        order_endpoint = f"{base_url}/validate_order/{order_data['idcommande']}/{'refused'}"
+        response = requests.post(order_endpoint)
 
 
 @app.post("/receive_payement/")

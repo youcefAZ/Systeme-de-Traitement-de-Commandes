@@ -104,6 +104,28 @@ class PayementResponse(BaseModel):
     quantity : int
     montant : int
 
+def update_order_state(order_id: int, validation: str):
+    db = SessionLocal()
+    order = db.query(Order).filter(Order.idcommande == order_id).first()
+    if order:
+        order.state=validation.lower()
+        db.commit()
+        db.refresh(order)
+        return order
+    return None
+
+
+def update_devis_state(devis_id: int, validation: str):
+    db = SessionLocal()
+    order = db.query(Order).filter(Devis.idDevis == devis_id).first()
+    if order:
+        order.state=validation.lower()
+        db.commit()
+        db.refresh(order)
+        return order
+    return None
+
+
 app = FastAPI()
 
 @app.post("/orders/", response_model=OrderResponse)
@@ -135,6 +157,16 @@ def read_order(order_idcommande: int):
         state=db_order.state
         )
 
+
+@app.post("/validate_order/{order_id}/{validation}", response_model=OrderResponse)
+def valid_order(order_id: int, validation: str):
+    order = update_order_state(order_id, validation)
+    if order:
+        return order
+    else:
+        return {"message": "Order not found"}
+
+
 @app.post("/devis/", response_model=DevisReponse)
 def create_devis(devis_request: DevisRequest):
     db = SessionLocal()
@@ -165,6 +197,14 @@ def read_order(devis_idDevis: int):
         montant=db_devis.montant,
         state=db_devis.state
     )
+
+@app.post("/validate_devis/{devis_id}/{validation}", response_model=OrderResponse)
+def valid_devis(devis_id: int, validation: str):
+    devis = update_devis_state(devis_id, validation)
+    if devis:
+        return devis
+    else:
+        return {"message": "Devis not found"}
 
 
 @app.post("/check_order")

@@ -20,6 +20,10 @@ def process_order(order_data):
     response = requests.post(order_endpoint, json=order_data)
     print(response.text)
 
+def refuse_order(order_data):
+    print("refusing order..")
+    order_endpoint = f"{base_url}/validate_order/{order_data['idcommande']}/{'refused'}"
+    response = requests.post(order_endpoint)
 
 def callback(ch, method, properties, body):
     order_data = json.loads(body)
@@ -32,12 +36,15 @@ def callback(ch, method, properties, body):
         thread = threading.Thread(target=process_order, args=(order_data,))
         thread.start()
 
-        print("Exiting the function without waiting for the API response for order.")
 
     elif user_input == "N":
         print("Order not processed.")
+        thread = threading.Thread(target=refuse_order, args=(order_data,))
+        thread.start()
     else:
         print("Invalid input. Please enter 'Y' or 'N.'")
+
+    print("Exiting the function without waiting for the API response for order.")
 
 
 # Set up the consumer and specify the callback function
