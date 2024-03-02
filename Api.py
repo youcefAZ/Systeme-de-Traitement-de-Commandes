@@ -3,6 +3,10 @@ from sqlalchemy import create_engine, Column, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from pydantic import BaseModel
+from sqlalchemy.orm import Session
+from typing import Optional
+from typing import Generator
+from fastapi import Depends
 
 # Configuration de la base de données
 DATABASE_URL = "sqlite:///./test4.db"
@@ -104,14 +108,26 @@ class PayementResponse(BaseModel):
     quantity : int
     montant : int
 
-def update_order_state(order_id: int, validation: str):
+def get_db() -> Generator:
     db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+def update_order_state(db: Session, order_id: int, validation: str) -> Optional[OrderResponse]:
     order = db.query(Order).filter(Order.idcommande == order_id).first()
     if order:
-        order.state=validation.lower()
+        order.state = validation.lower()
         db.commit()
         db.refresh(order)
-        return order
+        return OrderResponse(
+            idcommande=order.idcommande,
+            product_id=order.product_id,
+            customer_name=order.customer_name,
+            quantity=order.quantity,
+            state=order.state
+        )
     return None
 
 
@@ -159,12 +175,12 @@ def read_order(order_idcommande: int):
 
 
 @app.post("/validate_order/{order_id}/{validation}", response_model=OrderResponse)
-def valid_order(order_id: int, validation: str):
-    order = update_order_state(order_id, validation)
+def valid_order(order_id: int, validation: str, db: Session = Depends(get_db)):
+    order = update_order_state(db, order_id, validation)
     if order:
         return order
     else:
-        return {"message": "Order not found"}
+        raise HTTPException(status_code=404, detail="Order not found")
 
 
 @app.post("/devis/", response_model=DevisReponse)

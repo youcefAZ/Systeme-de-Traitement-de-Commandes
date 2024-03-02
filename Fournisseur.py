@@ -83,7 +83,7 @@ def place_order(order_data: Api.OrderRequest, background_tasks: BackgroundTasks)
         print(response.json())
 
         #call check_order from a backgroundtask
-        background_tasks.add_task(order_mq_order,response.json())
+        #background_tasks.add_task(order_mq_order,response.json())
     else:
         # Failed to place order
         print(f"Failed to place order. Status Code: {response.status_code}")
@@ -104,10 +104,10 @@ def check_order(order_data : dict, background_tasks: BackgroundTasks):
     if response_json["status"] == "Available":
         # Order verified successfully
         print("Order verified successfully")
-        print(response_json)
         
         order_endpoint = f"{base_url}/validate_order/{order_data['idcommande']}/{'validated'}"
         response = requests.post(order_endpoint)
+        print(response)
         response_json=response.json()
 
         order_endpoint = f"{client_url}/receive_validation"
