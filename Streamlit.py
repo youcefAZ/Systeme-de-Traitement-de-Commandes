@@ -1,16 +1,11 @@
 import sqlite3
 import streamlit as st
 import requests
-import pika
-import json
 import time
 
 base_url = "http://localhost:8000"
 fournisseur_url = "http://localhost:8002"
 
-# Connect to RabbitMQ server
-connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
-channel = connection.channel()
 
 # Function to fetch data from SQLite database
 def fetch_data():
